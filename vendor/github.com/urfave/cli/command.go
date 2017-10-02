@@ -151,7 +151,7 @@ func (c Command) Run(ctx *Context) (err error) {
 		ShowCommandHelp(ctx, c.Name)
 		return nerr
 	}
-
+	//新建一个上下文，继承runc 这个app的上下文
 	context := NewContext(ctx.App, set, ctx)
 
 	if checkCommandCompletions(context, c.Name) {
@@ -161,7 +161,7 @@ func (c Command) Run(ctx *Context) (err error) {
 	if checkCommandHelp(context, c.Name) {
 		return nil
 	}
-
+	//例如：create这个command如果定义了After那么函数退出时After
 	if c.After != nil {
 		defer func() {
 			afterErr := c.After(context)
@@ -175,7 +175,7 @@ func (c Command) Run(ctx *Context) (err error) {
 			}
 		}()
 	}
-
+	//例如：create这个command如果定义Before那么command真正执行之前执行Before
 	if c.Before != nil {
 		err = c.Before(context)
 		if err != nil {
@@ -188,6 +188,7 @@ func (c Command) Run(ctx *Context) (err error) {
 	}
 
 	context.Command = c
+	//执行create定义的Action，也就是运行真正的这个command对应的action处理函数
 	err = HandleAction(c.Action, context)
 
 	if err != nil {

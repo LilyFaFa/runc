@@ -100,6 +100,7 @@ func main() {
 			Usage: "enable systemd cgroup support, expects cgroupsPath to be of form \"slice:prefix:name\" for e.g. \"system.slice:runc:434234\"",
 		},
 	}
+	//支持的可以执行的命令
 	app.Commands = []cli.Command{
 		checkpointCommand,
 		createCommand,
@@ -119,6 +120,7 @@ func main() {
 		stateCommand,
 		updateCommand,
 	}
+	//定一个before成员函数，在run中会调用，在所有的子命令运行之前需要运行的命令
 	app.Before = func(context *cli.Context) error {
 		if context.GlobalBool("debug") {
 			logrus.SetLevel(logrus.DebugLevel)
@@ -144,6 +146,7 @@ func main() {
 	// the error on cli.ErrWriter and exit.
 	// Use our own writer here to ensure the log gets sent to the right location.
 	cli.ErrWriter = &FatalWriter{cli.ErrWriter}
+	//进入运行，也就我们执行runc create／delete／....时都会进入这个run函数
 	if err := app.Run(os.Args); err != nil {
 		fatal(err)
 	}

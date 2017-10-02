@@ -177,6 +177,7 @@ func (a *App) Run(arguments []string) (err error) {
 	set.SetOutput(ioutil.Discard)
 	err = set.Parse(arguments[1:])
 	nerr := normalizeFlags(a.Flags, set)
+	//创建一个context上下文，将app的flag传过来做context的上下文内容
 	context := NewContext(a, set, nil)
 	if nerr != nil {
 		fmt.Fprintln(a.Writer, nerr)
@@ -208,7 +209,7 @@ func (a *App) Run(arguments []string) (err error) {
 		ShowVersion(context)
 		return nil
 	}
-
+	//如果After不为空，那么在函数退出时执行after函数
 	if a.After != nil {
 		defer func() {
 			if afterErr := a.After(context); afterErr != nil {
@@ -221,6 +222,8 @@ func (a *App) Run(arguments []string) (err error) {
 		}()
 	}
 
+	//如果Before不为空，那么在执行command的run函数之前先执行before函数
+	//也就是例如 runc create，在执行create之前先执行这个函数
 	if a.Before != nil {
 		beforeErr := a.Before(context)
 		if beforeErr != nil {
@@ -231,17 +234,24 @@ func (a *App) Run(arguments []string) (err error) {
 			return err
 		}
 	}
-
+	// 解析传入的参数
+	// 例如 runc create conatinerid
 	args := context.Args()
+	// 看一下是否有参数，有参数就执行指定的command
+	// 例如runc create container containerid有一个参数containerid
 	if args.Present() {
 		name := args.First()
+		// 提取name，也就是create
 		c := a.Command(name)
 		if c != nil {
+			//将自己的上下文穿过去，调用create command的run函数完成指令的运行
 			return c.Run(context)
 		}
 	}
 
 	// Run default Action
+	// 运行默认的函数，例如如果只传入了 runc create命令而没有将conatainer命令传过来
+	// 那么会介绍create的用法
 	err = HandleAction(a.Action, context)
 
 	HandleExitCoder(err)
@@ -479,7 +489,7 @@ func HandleAction(action interface{}, context *Context) (err error) {
 			}
 		}
 	}()
-
+	//检测如果action不是函数类型那么返回错误
 	if reflect.TypeOf(action).Kind() != reflect.Func {
 		return errNonFuncAction
 	}
